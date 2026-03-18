@@ -101,20 +101,27 @@ body {
 }
 
 .sidebar-header {
-  padding: 0 24px 24px;
+  padding: 0 16px 24px;
   border-bottom: 1px solid rgba(255,255,255,0.05);
   margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .sidebar-brand {
-  font-size: 22px;
-  font-weight: 700;
-  color: white;
-  text-decoration: none;
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 12px;
-  letter-spacing: 0.5px;
+  width: 100%;
+}
+
+.sidebar-brand img {
+  width: 100%;
+  max-width: 170px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
 }
 
 .sidebar-brand i {

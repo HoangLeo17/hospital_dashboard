@@ -1,7 +1,7 @@
-const db = require('../database/database');
+const pool = require('../database/database');
 
 exports.getDepartments = (req, res) => {
-  db.all("SELECT * FROM bang_khoa ORDER BY ten_khoa ASC", [], (err, rows) => {
+  pool.query("SELECT * FROM bang_khoa ORDER BY ten_khoa ASC", (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -11,7 +11,7 @@ exports.getDepartments = (req, res) => {
 };
 
 exports.getIndicators = (req, res) => {
-  db.all("SELECT * FROM bang_chi_so", [], (err, rows) => {
+  pool.query("SELECT * FROM bang_chi_so", (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -24,15 +24,15 @@ exports.updateIndicator = (req, res) => {
   const { id } = req.params;
   const { chi_tieu_mong_doi, loai_so_sanh } = req.body;
   
-  db.run(
+  pool.query(
     `UPDATE bang_chi_so SET chi_tieu_mong_doi = ?, loai_so_sanh = ? WHERE id = ?`,
     [chi_tieu_mong_doi, loai_so_sanh, id],
-    function (err) {
+    (err, result) => {
       if (err) {
         res.status(500).json({ error: err.message });
         return;
       }
-      res.json({ message: 'Target updated successfully', changes: this.changes });
+      res.json({ message: 'Target updated successfully', changes: result.affectedRows });
     }
   );
 };
@@ -45,7 +45,7 @@ exports.getIndicatorsByDepartment = (req, res) => {
     JOIN khoa_chi_so kc ON cs.id = kc.chi_so_id
     WHERE kc.khoa_id = ?
   `;
-  db.all(query, [deptId], (err, rows) => {
+  pool.query(query, [deptId], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
@@ -60,7 +60,7 @@ exports.getDepartmentsByIndicator = (req, res) => {
     WHERE kc.chi_so_id = ?
     ORDER BY k.ten_khoa ASC
   `;
-  db.all(query, [id], (err, rows) => {
+  pool.query(query, [id], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });

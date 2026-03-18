@@ -14,8 +14,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       <aside className={`sidebar ${isOpen ? 'show' : ''}`} id="sidebar">
         <div className="sidebar-header">
           <Link to="/" className="sidebar-brand text-decoration-none">
-            <i className="bi bi-hospital-fill"></i>
-            <span>Bệnh viện Đa khoa Ninh Thuận</span>
+            <img src="/logo/auth-logo.svg" alt="Logo Bệnh viện Đa khoa Ninh Thuận" />
           </Link>
         </div>
 

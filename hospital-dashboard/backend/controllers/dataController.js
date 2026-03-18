@@ -1,7 +1,6 @@
-const db = require('../database/database');
+const pool = require('../database/database');
 
 exports.getData = (req, res) => {
-  // Use indicator_id for backwards compatibility or general query
   const { indicator_id, nam, thang, quy } = req.query;
 
   let query = `
@@ -37,7 +36,7 @@ exports.getData = (req, res) => {
     }
   }
 
-  db.all(query, params, (err, rows) => {
+  pool.query(query, params, (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -50,54 +49,54 @@ exports.postData = (req, res) => {
   const { id_chi_so, id_khoa, nam, thang, tu_so, mau_so } = req.body;
 
   // 1. Validate mapping exists in khoa_chi_so
-  db.get(
+  pool.query(
     `SELECT id FROM khoa_chi_so WHERE khoa_id = ? AND chi_so_id = ?`,
     [id_khoa, id_chi_so],
-    (err, mapping) => {
+    (err, rows) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
-      if (!mapping) {
+      if (!rows || rows.length === 0) {
         return res.status(400).json({ 
           error: 'Chỉ số này không áp dụng cho khoa được chọn theo quy định của bệnh viện.' 
         });
       }
 
       // 2. Check if entry exists for this period
-      db.get(
+      pool.query(
         `SELECT id FROM bang_du_lieu_chi_so WHERE id_chi_so = ? AND id_khoa = ? AND nam = ? AND thang = ?`,
         [id_chi_so, id_khoa, nam, thang],
-        (err, row) => {
+        (err, rows) => {
           if (err) {
             res.status(500).json({ error: err.message });
             return;
           }
 
-          if (row) {
+          if (rows && rows.length > 0) {
             // Update existing record
-            db.run(
+            pool.query(
               `UPDATE bang_du_lieu_chi_so SET tu_so = ?, mau_so = ?, ngay_nhap = CURRENT_TIMESTAMP WHERE id = ?`,
-              [tu_so, mau_so, row.id],
-              function (err) {
+              [tu_so, mau_so, rows[0].id],
+              (err) => {
                 if (err) {
                   res.status(500).json({ error: err.message });
                   return;
                 }
-                res.json({ message: 'Data updated successfully', id: row.id });
+                res.json({ message: 'Data updated successfully', id: rows[0].id });
               }
             );
           } else {
             // Insert new record
-            db.run(
+            pool.query(
               `INSERT INTO bang_du_lieu_chi_so (id_chi_so, id_khoa, nam, thang, tu_so, mau_so)
                VALUES (?, ?, ?, ?, ?, ?)`,
               [id_chi_so, id_khoa, nam, thang, tu_so, mau_so],
-              function (err) {
+              (err, result) => {
                 if (err) {
                   res.status(500).json({ error: err.message });
                   return;
                 }
-                res.status(201).json({ message: 'Data created successfully', id: this.lastID });
+                res.status(201).json({ message: 'Data created successfully', id: result.insertId });
               }
             );
           }
@@ -116,7 +115,6 @@ exports.getYears = (req, res) => {
     years.push(y);
   }
   
-  // Return at least the start year if somehow the current year is earlier (e.g. system clock issues)
   if (years.length === 0) {
     years.push(startYear);
   }

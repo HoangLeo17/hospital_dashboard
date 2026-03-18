@@ -1,52 +1,26 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const mysql = require('mysql2');
 
-// Connect to SQLite database
-const dbPath = process.env.DB_PATH ? path.resolve(__dirname, '..', process.env.DB_PATH) : path.resolve(__dirname, '../kpi_dashboard.sqlite');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error opening database', err.message);
-  } else {
-    console.log('Connected to the SQLite database.');
-    initializeDatabase();
-  }
+// Tạo connection pool tới MySQL
+const pool = mysql.createPool({
+  host:     process.env.DB_HOST     || 'localhost',
+  port:     parseInt(process.env.DB_PORT) || 3306,
+  user:     process.env.DB_USER     || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME     || 'chi_so_danh_gia_benh_vien',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  charset: 'utf8mb4',
 });
 
-function initializeDatabase() {
-  db.serialize(() => {
-    // 1. Create bang_chi_so (Quality Indicators)
-    db.run(`CREATE TABLE IF NOT EXISTS bang_chi_so (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      ma_chi_so TEXT NOT NULL,
-      ten_chi_so TEXT NOT NULL,
-      don_vi_tinh TEXT NOT NULL,
-      chi_tieu_mong_doi REAL,
-      loai_so_sanh TEXT CHECK( loai_so_sanh IN ('>=', '<=', '>', '<') ),
-      mo_ta TEXT
-    )`);
+// Kiểm tra kết nối khi khởi động
+pool.getConnection((err, connection) => {
+  if (err) {
+    console.error('❌ Lỗi kết nối MySQL:', err.message);
+    process.exit(1);
+  }
+  console.log('✅ Kết nối MySQL thành công - Database: chi_so_danh_gia_benh_vien');
+  connection.release();
+});
 
-    // 2. Create bang_khoa (Departments)
-    db.run(`CREATE TABLE IF NOT EXISTS bang_khoa (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      ten_khoa TEXT NOT NULL
-    )`);
-
-    // 3. Create bang_du_lieu_chi_so (Data Entries)
-    db.run(`CREATE TABLE IF NOT EXISTS bang_du_lieu_chi_so (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      id_chi_so INTEGER,
-      id_khoa INTEGER,
-      nam INTEGER,
-      thang INTEGER,
-      tu_so INTEGER,
-      mau_so INTEGER,
-      ngay_nhap DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (id_chi_so) REFERENCES bang_chi_so (id),
-      FOREIGN KEY (id_khoa) REFERENCES bang_khoa (id)
-    )`);
-
-    // Seed Data if needed (Usually not needed if sqlite file is copied, but keeping for safety)
-  });
-}
-
-module.exports = db;
+module.exports = pool;
