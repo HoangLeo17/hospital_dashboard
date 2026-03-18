@@ -121,9 +121,11 @@ const VentilatorPneumoniaPage = () => {
         subtitle="Giám sát và đo lường tỷ lệ nhiễm khuẩn liên quan đến thở máy tại các khoa trọng điểm"
         overallRate={overallRate}
         targetVal={targetVal}
-        indicatorName="Viêm_phổi_thở_máy"
+        indicatorId={indicatorId}
+        indicatorName="Viem_phoi_tho_may"
         year={year}
         entries={entries}
+        departments={departments}
         operator={operator}
       />
 

@@ -9,12 +9,12 @@ const PageHeader = ({
   subtitle, 
   overallRate, 
   targetVal, 
+  indicatorId,
   indicatorName, 
   year, 
   entries, 
+  departments,
   operator,
-  unit = '%',
-  calcMultiplier = 100
 }) => {
   const isPassing = operator === '>=' ? overallRate >= targetVal : overallRate <= targetVal;
 
@@ -26,13 +26,11 @@ const PageHeader = ({
       </div>
       <div className="d-flex align-items-center gap-2 flex-wrap">
         <ReportExport
+          indicatorId={indicatorId}
           indicatorName={indicatorName}
           year={year}
           entries={entries}
-          targetVal={targetVal}
-          operator={operator}
-          unit={unit}
-          calcMultiplier={calcMultiplier}
+          departments={departments}
         />
         <div className={`status-badge ${isPassing ? 'ok' : 'bad'}`} style={{ fontSize: '14px', padding: '8px 16px', borderRadius: '8px' }}>
           {isPassing ? (

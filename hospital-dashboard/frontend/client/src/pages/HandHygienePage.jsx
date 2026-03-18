@@ -148,9 +148,11 @@ const HandHygienePage = () => {
         subtitle="Giám sát tỷ lệ tuân thủ vệ sinh tay của nhân viên y tế toàn viện"
         overallRate={overallRate}
         targetVal={targetVal}
+        indicatorId={indicatorId}
         indicatorName="Tuan_thu_ve_sinh_tay"
         year={year}
         entries={entries}
+        departments={departments}
         operator={operator}
       />
 
