@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getDepartmentsByIndicator, getIndicatorData, postIndicatorData, getIndicators, updateIndicatorTarget, getYears } from '../utils/api';
 import ProgressDoughnut from '../components/ProgressDoughnut';
 import DepartmentBarChart from '../components/DepartmentBarChart';
@@ -108,30 +108,38 @@ const HandHygienePage = () => {
   };
 
   // Calculate Data for Charts
-  const filteredEntries = filterMonth === 'all' ? entries : entries.filter(e => e.thang.toString() === filterMonth);
+  const filteredEntries = useMemo(
+    () => filterMonth === 'all' ? entries : entries.filter(e => String(e.thang) === String(filterMonth)),
+    [entries, filterMonth]
+  );
 
-  let totalTuSo = 0;
-  let totalMauSo = 0;
-  filteredEntries.forEach(e => {
-    totalTuSo += e.tu_so;
-    totalMauSo += e.mau_so;
-  });
-  const overallRate = totalMauSo > 0 ? Math.round((totalTuSo / totalMauSo) * 100) : 0;
+  const { totalTuSo, totalMauSo, overallRate } = useMemo(() => {
+    let totalTuSo = 0;
+    let totalMauSo = 0;
+    filteredEntries.forEach(e => {
+      totalTuSo += Number(e.tu_so);
+      totalMauSo += Number(e.mau_so);
+    });
+    const overallRate = totalMauSo > 0 ? Math.round((totalTuSo / totalMauSo) * 100) : 0;
+    return { totalTuSo, totalMauSo, overallRate };
+  }, [filteredEntries]);
 
   // Department Breakdown
-  const deptMap = {};
-  filteredEntries.forEach(e => {
-    if (!deptMap[e.ten_khoa]) deptMap[e.ten_khoa] = { tu_so: 0, mau_so: 0 };
-    deptMap[e.ten_khoa].tu_so += e.tu_so;
-    deptMap[e.ten_khoa].mau_so += e.mau_so;
-  });
-
-  const chartLabels = [];
-  const chartData = [];
-  Object.keys(deptMap).forEach(k => {
-    chartLabels.push(k.substring(0, 15));
-    chartData.push(Math.round((deptMap[k].tu_so / deptMap[k].mau_so) * 100));
-  });
+  const { chartLabels, chartData } = useMemo(() => {
+    const deptMap = {};
+    filteredEntries.forEach(e => {
+      if (!deptMap[e.ten_khoa]) deptMap[e.ten_khoa] = { tu_so: 0, mau_so: 0 };
+      deptMap[e.ten_khoa].tu_so += Number(e.tu_so);
+      deptMap[e.ten_khoa].mau_so += Number(e.mau_so);
+    });
+    const chartLabels = [];
+    const chartData = [];
+    Object.keys(deptMap).forEach(k => {
+      chartLabels.push(k.substring(0, 15));
+      chartData.push(Math.round((deptMap[k].tu_so / deptMap[k].mau_so) * 100));
+    });
+    return { chartLabels, chartData };
+  }, [filteredEntries]);
 
   return (
     <>
