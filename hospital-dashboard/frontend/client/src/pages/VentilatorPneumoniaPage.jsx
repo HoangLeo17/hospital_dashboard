@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getDepartmentsByIndicator, getIndicatorData, postIndicatorData, getIndicators, updateIndicatorTarget, getYears } from '../utils/api';
 import DepartmentBarChart from '../components/DepartmentBarChart';
 import PageHeader from '../components/PageHeader';
+import VAPYearTrendChart from '../components/VAPYearTrendChart';
+import VAPDepartmentChart from '../components/VAPDepartmentChart';
 
 const VentilatorPneumoniaPage = () => {
   const indicatorId = 2; // VPTM
@@ -23,7 +25,7 @@ const VentilatorPneumoniaPage = () => {
   const [savingData, setSavingData] = useState(false);
 
   // Filter 
-  const [filterMonth, setFilterMonth] = useState('all');
+  const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1 + ''); // Default to current month or latest data
 
   useEffect(() => {
     fetchInitData();
@@ -100,19 +102,47 @@ const VentilatorPneumoniaPage = () => {
     }
   };
 
-  // Calculate Data for Charts
-  const filteredEntries = filterMonth === 'all' ? entries : entries.filter(e => e.thang.toString() === filterMonth);
+  // 1. Calculate Yearly Trend Data (Aggregated by month)
+  const monthlyRates = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => {
+      const m = i + 1;
+      const mEntries = entries.filter(e => Number(e.thang) === m);
+      let mTuSo = 0;
+      let mMauSo = 0;
+      mEntries.forEach(e => {
+        mTuSo += Number(e.tu_so);
+        mMauSo += Number(e.mau_so);
+      });
+      return mMauSo > 0 ? parseFloat(((mTuSo / mMauSo) * 100).toFixed(1)) : 0;
+    });
+  }, [entries]);
 
-  let totalTuSo = 0;
-  let totalMauSo = 0;
-  filteredEntries.forEach(e => {
-    totalTuSo += e.tu_so;
-    totalMauSo += e.mau_so;
-  });
-  const overallRate = totalMauSo > 0 ? Math.round((totalTuSo / totalMauSo) * 100) : 0;
+  // 2. Calculate Monthly Department Data (Filtered by selected month)
+  const { deptLabels, deptValues, mEntries } = useMemo(() => {
+    const currentMonthInt = parseInt(filterMonth);
+    const mEntries = entries.filter(e => Number(e.thang) === currentMonthInt);
+    const deptLabels = mEntries.map(e => e.ten_khoa);
+    const deptValues = mEntries.map(e => e.mau_so > 0 ? parseFloat(((e.tu_so / e.mau_so) * 100).toFixed(1)) : 0);
+    return { deptLabels, deptValues, mEntries };
+  }, [entries, filterMonth]);
 
-  // Render Logic
-  let monthsToRender = filterMonth === 'all' ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [parseInt(filterMonth)];
+  // Overall Rate for Header
+  const overallRate = useMemo(() => {
+    let totalTuSo = 0;
+    let totalMauSo = 0;
+    entries.forEach(e => {
+      totalTuSo += Number(e.tu_so);
+      totalMauSo += Number(e.mau_so);
+    });
+    return totalMauSo > 0 ? Math.round((totalTuSo / totalMauSo) * 100) : 0;
+  }, [entries]);
+
+  // DEBUGGING: Log data flow
+  useEffect(() => {
+    console.log("VAP Page Entries:", entries);
+    console.log("Monthly Rates (T1-T12):", monthlyRates);
+    console.log("Filter Month:", filterMonth, "mEntries:", mEntries);
+  }, [entries, monthlyRates, filterMonth, mEntries]);
 
   return (
     <>
@@ -129,10 +159,11 @@ const VentilatorPneumoniaPage = () => {
         operator={operator}
       />
 
+      {/* Data Input Section */}
       <div className="row g-4 mb-4">
         {/* Target Settings */}
         <div className="col-xl-4 col-lg-5">
-          <div className="glass-panel h-100" style={{ animation: 'fadeInUp 0.4s ease-out 0.1s both' }}>
+          <div className="glass-panel h-100">
             <div className="d-flex align-items-center mb-4 gap-2">
               <div className="kpi-icon icon-blue"><i className="bi bi-bullseye"></i></div>
               <h5 className="mb-0 fw-bold">Thiết lập chỉ tiêu</h5>
@@ -166,7 +197,7 @@ const VentilatorPneumoniaPage = () => {
 
         {/* Data Entry */}
         <div className="col-xl-8 col-lg-7">
-          <div className="glass-panel h-100" style={{ animation: 'fadeInUp 0.4s ease-out 0.2s both' }}>
+          <div className="glass-panel h-100">
             <div className="d-flex align-items-center mb-4 gap-2">
               <div className="kpi-icon icon-green"><i className="bi bi-pencil-square"></i></div>
               <h5 className="mb-0 fw-bold">Nhập liệu giám sát</h5>
@@ -227,69 +258,62 @@ const VentilatorPneumoniaPage = () => {
         </div>
       </div>
 
+      {/* 2. Yearly VAP Trend Chart */}
+      <div className="mb-4">
+        <div className="glass-panel">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <div className="d-flex align-items-center gap-2">
+              <div className="kpi-icon icon-purple"><i className="bi bi-graph-up-arrow"></i></div>
+              <h5 className="mb-0 fw-bold">Diễn biến tỷ lệ VAP năm {year} (%)</h5>
+            </div>
+            <div className="badge bg-light text-dark border p-2">
+              Chỉ tiêu: {operator} {targetVal}%
+            </div>
+          </div>
+          <div style={{ height: '400px' }}>
+            <VAPYearTrendChart dataValues={monthlyRates} targetValue={targetVal} />
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Monthly Department Comparison */}
       <div className="d-flex justify-content-between align-items-center mb-4 mt-5">
-        <h4 className="fw-bold mb-0">Phân tích chuyên sâu</h4>
+        <h4 className="fw-bold mb-0">So sánh giữa các khoa</h4>
         <div className="d-flex gap-2 bg-white p-2 rounded-3 shadow-sm border">
           <select className="form-select form-select-sm border-0 bg-transparent fw-medium" value={year} onChange={e => setYear(e.target.value)} style={{ width: '100px', boxShadow: 'none' }}>
             {yearsList.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           <div className="vr bg-secondary opacity-25"></div>
           <select className="form-select form-select-sm border-0 bg-transparent fw-medium" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ width: 'auto', boxShadow: 'none' }}>
-            <option value="all">Hiển thị cả năm</option>
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => <option key={m} value={m}>Tháng {m.toString().padStart(2, '0')}</option>)}
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => <option key={m} value={m + ''}>Tháng {m.toString().padStart(2, '0')}</option>)}
           </select>
         </div>
       </div>
 
-      <div className="mb-3 d-flex justify-content-between align-items-center">
-        <div className="d-flex align-items-center gap-2">
-          <div className="kpi-icon icon-orange" style={{ width: '30px', height: '30px', fontSize: '14px' }}><i className="bi bi-bar-chart-line-fill"></i></div>
-          <h6 className="mb-0 fw-bold">Tỷ lệ viêm phổi thở máy (%)</h6>
-        </div>
-        <div className="d-flex gap-3 text-muted fs-7 fw-medium bg-white px-3 py-2 rounded-3 border shadow-sm">
-          <div className="d-flex align-items-center gap-2">
-            <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(46, 204, 113, 0.8)' }}></div> Đạt KPI
-          </div>
-          <div className="d-flex align-items-center gap-2">
-            <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(231, 76, 60, 0.8)' }}></div> Vượt ngưỡng an toàn
-          </div>
-        </div>
-      </div>
-
       <div className="row g-4 mb-5">
-        {monthsToRender.map(m => {
-          let mEntries = entries.filter(e => e.thang === m);
-          if (mEntries.length === 0 && filterMonth === 'all') return null;
-
-          let labels = [];
-          let values = [];
-
-          mEntries.forEach(e => {
-            labels.push(e.ten_khoa.substring(0, 15));
-            values.push(e.mau_so > 0 ? ((e.tu_so / e.mau_so) * 100).toFixed(1) : 0);
-          });
-
-          return (
-            <div className="col-xl-6 col-md-12" key={m}>
-              <div className="glass-panel h-100" style={{ animation: `fadeInUp 0.5s ease-out 0.4s both` }}>
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                  <h6 className="fw-bold mb-0 text-dark">Thống kê nội bộ Tháng {m.toString().padStart(2, '0')}</h6>
-                  <div className="badge bg-light text-dark border p-2">
-                    <i className="bi bi-shield-check text-success"></i> Giới hạn: {operator} {targetVal}%
-                  </div>
+        <div className="col-12">
+          <div className="glass-panel">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h6 className="fw-bold mb-0 text-dark">Thống kê chi tiết Tháng {filterMonth.padStart(2, '0')}</h6>
+              <div className="d-flex gap-3 text-muted fs-7 fw-medium bg-white px-3 py-2 rounded-3 border">
+                <div className="d-flex align-items-center gap-2">
+                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(46, 204, 113, 0.8)' }}></div> Đạt KPI
                 </div>
-
-                <div className="chart-container" style={{ height: '320px' }}>
-                  {mEntries.length === 0 ? (
-                    <div className="text-center text-muted mt-5 pt-5">Chưa có dữ liệu</div>
-                  ) : (
-                    <DepartmentBarChart labels={labels} dataValues={values} targetValue={targetVal} isPercentage={true} />
-                  )}
+                <div className="d-flex align-items-center gap-2">
+                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(231, 76, 60, 0.8)' }}></div> Vượt ngưỡng
                 </div>
               </div>
             </div>
-          )
-        })}
+
+            <div style={{ height: '350px' }}>
+              {!mEntries || mEntries.length === 0 ? (
+                <div className="text-center text-muted mt-5 pt-5">Chưa có dữ liệu cho tháng {filterMonth}</div>
+              ) : (
+                <VAPDepartmentChart labels={deptLabels} dataValues={deptValues} targetValue={targetVal} />
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );
