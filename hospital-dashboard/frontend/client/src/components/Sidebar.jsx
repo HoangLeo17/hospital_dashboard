@@ -53,9 +53,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             </a>
           </li>
           <li className="nav-item">
-            <a href="#" className="nav-link">
+            <Link to="/namduongthuoc" className={`nav-link ${isActive('/namduongthuoc')}`}>
               <i className="bi bi-capsule"></i> 6. 05 đúng dùng thuốc
-            </a>
+            </Link>
           </li>
           <li className="nav-item">
             <a href="#" className="nav-link">

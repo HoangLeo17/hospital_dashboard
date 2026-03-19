@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import HandHygienePage from './pages/HandHygienePage';
 import VentilatorPneumoniaPage from './pages/VentilatorPneumoniaPage';
+import FiveCorrectionPage from './pages/FiveCorrectionPage';
 import AdminLogin from './pages/AdminLogin';
 import AdminPanel from './pages/AdminPanel';
 
@@ -21,6 +22,7 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/vesinhtay" element={<HandHygienePage />} />
               <Route path="/viemphoi" element={<VentilatorPneumoniaPage />} />
+              <Route path="/namduongthuoc" element={<FiveCorrectionPage />} />
             </Routes>
           </Layout>
         } />

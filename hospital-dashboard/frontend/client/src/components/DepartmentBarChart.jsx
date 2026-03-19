@@ -1,38 +1,54 @@
 import React from 'react';
 import { Bar } from 'react-chartjs-2';
 
-const DepartmentBarChart = ({ labels, dataValues, targetValue, isPercentage }) => {
-  
-  const colors = dataValues.map(val => 
-    val >= targetValue ? 'rgba(67, 97, 238, 0.8)' : 'rgba(231, 76, 60, 0.8)'
-  );
-  
-  const hoverColors = dataValues.map(val => 
-    val >= targetValue ? 'rgba(67, 97, 238, 1)' : 'rgba(231, 76, 60, 1)'
+const DepartmentBarChart = ({ labels, dataValues, targetValue, isPercentage, operator = '>=' }) => {
+
+  // Kiểm tra đạt KPI dựa theo operator
+  const isPass = (val) => {
+    const v = parseFloat(val);
+    const t = parseFloat(targetValue);
+    if (operator === '>=') return v >= t;
+    if (operator === '<=') return v <= t;
+    if (operator === '>') return v > t;
+    if (operator === '<') return v < t;
+    return v >= t;
+  };
+
+  const colors = dataValues.map(val =>
+    isPass(val) ? 'rgba(67, 97, 238, 0.8)' : 'rgba(231, 76, 60, 0.8)'
   );
 
+  const hoverColors = dataValues.map(val =>
+    isPass(val) ? 'rgba(67, 97, 238, 1)' : 'rgba(231, 76, 60, 1)'
+  );
+
+  // Thêm điểm phantom để đường line luôn hiển thị dù chỉ có 1 bar
+  const lineLabels = labels.length === 1 ? [...labels, ''] : labels;
+  const lineData   = Array(lineLabels.length).fill(targetValue);
+
   const data = {
-    labels,
+    labels: lineLabels,
     datasets: [
       {
         label: isPercentage ? "Tỷ lệ tuân thủ (%)" : "Tỷ lệ (‰)",
-        data: dataValues,
-        backgroundColor: colors,
-        hoverBackgroundColor: hoverColors,
+        data: [...dataValues, ...(labels.length === 1 ? [null] : [])],
+        backgroundColor: [...colors, ...(labels.length === 1 ? ['transparent'] : [])],
+        hoverBackgroundColor: [...hoverColors, ...(labels.length === 1 ? ['transparent'] : [])],
         borderRadius: 8,
         barThickness: 'flex',
-        maxBarThickness: 60
+        maxBarThickness: 60,
       },
       {
         type: 'line',
         label: 'Ngưỡng an toàn (KPI)',
-        data: Array(labels.length).fill(targetValue),
-        borderColor: 'rgba(243, 156, 18, 0.7)',
+        data: lineData,
+        borderColor: 'rgba(243, 156, 18, 0.9)',
         borderWidth: 2,
         borderDash: [5, 5],
         fill: false,
         pointRadius: 0,
-        pointHitRadius: 0
+        pointHitRadius: 0,
+        spanGaps: true,
       }
     ]
   };
