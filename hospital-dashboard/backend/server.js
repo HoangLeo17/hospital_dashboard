@@ -41,5 +41,5 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Backend server is running:`);
   console.log(`  - Local:   http://localhost:${PORT}`);
   console.log(`  - Network: http://${LAN_IP}:${PORT}`);
-  console.log(`Connected to the SQLite database.`);
+  console.log(`Connected to the MySQL database.`);
 });

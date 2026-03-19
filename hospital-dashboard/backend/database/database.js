@@ -17,10 +17,11 @@ const pool = mysql.createPool({
 pool.getConnection((err, connection) => {
   if (err) {
     console.error('❌ Lỗi kết nối MySQL:', err.message);
-    process.exit(1);
+    // process.exit(1); // Do not exit, allow server to run for frontend development
+  } else {
+    console.log('✅ Kết nối MySQL thành công - Database: chi_so_danh_gia_benh_vien');
   }
-  console.log('✅ Kết nối MySQL thành công - Database: chi_so_danh_gia_benh_vien');
-  connection.release();
+  if (connection) connection.release();
 });
 
 module.exports = pool;
