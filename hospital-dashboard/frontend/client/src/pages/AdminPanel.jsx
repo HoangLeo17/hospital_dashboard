@@ -532,10 +532,10 @@ const AdminPanel = () => {
   }
 
   const tabs = [
-    { key: 'khoa', icon: 'bi-building', label: 'Khoa' },
-    { key: 'chiso', icon: 'bi-clipboard-data', label: 'Chỉ số' },
-    { key: 'mapping', icon: 'bi-link-45deg', label: 'Khoa – Chỉ số' },
-    { key: 'dulieu', icon: 'bi-database', label: 'Dữ liệu' },
+    { key: 'khoa', icon: 'bi-building', label: 'bang_khoa' },
+    { key: 'chiso', icon: 'bi-clipboard-data', label: 'bang_chi_so' },
+    { key: 'mapping', icon: 'bi-link-45deg', label: 'khoa_chi_so' },
+    { key: 'dulieu', icon: 'bi-database', label: 'bang_du_lieu_chi_so' },
   ];
 
   return (
