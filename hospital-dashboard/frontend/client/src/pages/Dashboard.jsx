@@ -131,41 +131,40 @@ const Dashboard = () => {
           </div>
         ) : (
           indicators.map((ind, i) => {
-            const relatedEntries = entries.filter(e => e.id_chi_so === ind.id);
+            const relatedEntries = entries.filter(e => Number(e.id_chi_so) === Number(ind.id));
             let totalTuSo = 0;
             let totalMauSo = 0;
 
             relatedEntries.forEach(e => {
-              totalTuSo += e.tu_so;
-              totalMauSo += e.mau_so;
+              totalTuSo += Number(e.tu_so);
+              totalMauSo += Number(e.mau_so);
             });
+
+            // don_vi_tinh trong DB có thể bị lỗi encoding, dùng fallback an toàn
+            const rawUnit = ind.don_vi_tinh || '%';
+            const displayUnit = rawUnit === '?' ? '%' : rawUnit;
+            const multiplier = displayUnit === '‰' ? 1000 : 100;
 
             let rateValue = 0;
             if (totalMauSo > 0) {
-              if (ind.don_vi_tinh === '%') {
-                rateValue = (totalTuSo / totalMauSo) * 100;
-              } else if (ind.don_vi_tinh === '‰') {
-                rateValue = (totalTuSo / totalMauSo) * 1000;
-              } else {
-                rateValue = (totalTuSo / totalMauSo);
-              }
+              rateValue = (totalTuSo / totalMauSo) * multiplier;
             }
 
-            let showRate = rateValue.toFixed(totalMauSo === 0 ? 0 : 1);
-            if (showRate.endsWith('.0')) showRate = Math.round(rateValue).toString();
+            const hasData = totalMauSo > 0;
+            let showRate = hasData ? (Number.isInteger(Math.round(rateValue)) ? Math.round(rateValue).toString() : rateValue.toFixed(1)) : '--';
 
-            let target = ind.chi_tieu_mong_doi;
+            let target = parseFloat(ind.chi_tieu_mong_doi);
             let pass = false;
-            let parsedVal = parseFloat(showRate);
+            const parsedVal = parseFloat(showRate);
 
-            if (ind.loai_so_sanh === '>=') pass = parsedVal >= target;
-            if (ind.loai_so_sanh === '<=') pass = parsedVal <= target;
-            if (ind.loai_so_sanh === '>') pass = parsedVal > target;
-            if (ind.loai_so_sanh === '<') pass = parsedVal < target;
+            if (hasData) {
+              if (ind.loai_so_sanh === '>=') pass = parsedVal >= target;
+              else if (ind.loai_so_sanh === '<=') pass = parsedVal <= target;
+              else if (ind.loai_so_sanh === '>') pass = parsedVal > target;
+              else if (ind.loai_so_sanh === '<') pass = parsedVal < target;
+            }
 
-            if (totalMauSo === 0) pass = true;
-
-            const badgeHtml = totalMauSo === 0
+            const badgeHtml = !hasData
               ? '<div class="status-badge bg-light text-muted border">Chưa có dữ liệu</div>'
               : (pass
                 ? '<div class="status-badge ok"><i class="bi bi-check-circle-fill"></i> Đạt</div>'
@@ -177,10 +176,10 @@ const Dashboard = () => {
                 title={ind.ten_chi_so}
                 icon={icons[i % icons.length]}
                 colorClass={colors[i % colors.length]}
-                value={totalMauSo === 0 ? '--' : showRate}
-                unit={ind.don_vi_tinh}
+                value={showRate}
+                unit={hasData ? displayUnit : ''}
                 statusHtml={badgeHtml}
-                targetHtml={`Mục tiêu: ${ind.loai_so_sanh} ${ind.chi_tieu_mong_doi}${ind.don_vi_tinh}`}
+                targetHtml={`Mục tiêu: ${ind.loai_so_sanh} ${target}${displayUnit}`}
                 delay={i * 0.05}
               />
             );
